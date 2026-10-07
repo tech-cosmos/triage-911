@@ -131,9 +131,15 @@ export default function Dashboard() {
         </section>
 
         <section className="panel incidents">
+          <h2 className="main-h">Main event</h2>
+          <p className="explain">The incident causing the spike: the one with the most calls. New calls about it are merged here instead of queuing for a dispatcher.</p>
+          {main ? <IncidentCard i={main} byId={byId} onSelect={onSelect} active={sel?.id === main.id} distance={distOf(main)} isMain />
+            : <p className="empty">No calls yet.</p>}
+
           <h2 className="alert">Not part of the main event <span>{hidden.length}</span></h2>
+          <p className="explain">Separate emergencies that came in during the spike. Jev decided they are <b>not</b> the main event, so they get their own response instead of being buried under its calls.</p>
           {hidden.length ? hidden.map((i) => <IncidentCard key={i.id} i={i} byId={byId} onSelect={onSelect} active={sel?.id === i.id} distance={distOf(i)} highlight />)
-            : <p className="empty">Separate emergencies that arrive during the spike surface here.</p>}
+            : <p className="empty">None yet.</p>}
 
           {reviewQueue.length > 0 && (
             <>
@@ -220,14 +226,14 @@ function CallRow({ c, startedAt, onSelect }: { c: ProcessedCall; startedAt: numb
   );
 }
 
-function IncidentCard({ i, byId, onSelect, active, highlight, distance, nearest }: {
+function IncidentCard({ i, byId, onSelect, active, highlight, distance, nearest, isMain }: {
   i: Incident; byId: Map<string, ProcessedCall>; onSelect: (id: string) => void; active: boolean; highlight?: boolean;
-  distance?: string; nearest?: boolean;
+  distance?: string; nearest?: boolean; isMain?: boolean;
 }) {
   const facts = byId.get(i.callIds[0])?.facts;
   const vulnerable = [...new Set(i.callIds.flatMap((id) => byId.get(id)?.facts?.vulnerable ?? []))];
   return (
-    <div className={`card ${active ? "active" : ""} ${highlight ? "hl" : ""}`} onClick={() => onSelect(i.id)}>
+    <div className={`card ${active ? "active" : ""} ${highlight ? "hl" : ""} ${isMain ? "main" : ""}`} onClick={() => onSelect(i.id)}>
       <div className="row">
         <b>{i.id}</b>
         <Prio p={i.priority} />

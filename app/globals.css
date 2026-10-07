@@ -46,6 +46,12 @@ main { flex: 1; min-height: 0; display: grid; grid-template-columns: 1.1fr 1fr 1
 .panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 6px 0 8px; display: flex; gap: 8px; }
 .panel h2 span { color: var(--text); }
 .panel h2 em { font-style: normal; text-transform: none; letter-spacing: 0; color: var(--me); margin-left: auto; }
+.panel h2.main-h { color: var(--p2); }
+.panel .explain { color: var(--muted); font-size: 12px; margin: -4px 0 8px; }
+.panel .explain + .card, .panel .explain + .empty { margin-top: 0; }
+.panel h2 + .explain { margin-top: 0; }
+.panel .card + h2, .panel .empty + h2 { margin-top: 16px; }
+.card.main { border-color: var(--p2); box-shadow: inset 3px 0 0 var(--p2); }
 .panel h2.alert { color: var(--p1); }
 .panel h2.review { color: var(--review); }
 .panel ul { list-style: none; margin: 0; padding: 0; }
