@@ -6,6 +6,10 @@ When an incident causes a spike in 911 calls, Triage 911 groups duplicate report
 
 ## Project description (hackathon submission)
 
+> Triage 911 merges duplicate 911 calls during a spike and flags urgent ones in ~350ms using the Jev System 1 model. In a 57-call test: 0 wrong merges, 5/5 hidden emergencies found.
+
+## About the project
+
 **Triage 911 finds the one call that matters in a flood of calls about the same thing.**
 
 When a building catches fire, dozens of people call 911 to report the same smoke. Dispatchers have to listen to each call to find out whether it's new, so one fire can tie up the whole center. The worst case is a separate emergency calling in the middle of the spike, like a cardiac arrest two blocks away, and waiting in line behind 40 fire reports.
