@@ -4,6 +4,36 @@ When an incident causes a spike in 911 calls, Triage 911 groups duplicate report
 
 **Live demo: https://triage-911.vercel.app** (click **▶ Simulate spike**)
 
+## Project description (hackathon submission)
+
+**Triage 911 finds the one call that matters in a flood of calls about the same thing.**
+
+When a building catches fire, dozens of people call 911 to report the same smoke. Dispatchers have to listen to each call to find out whether it's new, so one fire can tie up the whole center. The worst case is a separate emergency calling in the middle of the spike, like a cardiac arrest two blocks away, and waiting in line behind 40 fire reports.
+
+Triage 911 groups duplicate reports into one incident, ranks every call by urgency, and brings separate emergencies to the top. Each new call is handled in parallel:
+
+- **Priority:** Jev, TypeSafe's System 1 decisions model, rates the call P1–P4 with calibrated probabilities in about 200–350ms. Fixed rules ("not breathing", "knife", "trapped") force P1, and no model can lower them.
+- **Same incident?** Jev compares the call with every nearby incident in one request and returns a probability for each. A high probability merges the call automatically, a middling one goes to a dispatcher for one-click review, and a low one opens a new incident.
+- **Facts:** Claude Haiku pulls out the incident type, spoken location, injuries, trapped people and vulnerable people (children, wheelchair users, pregnant women). It never delays a decision.
+
+Duplicates are merged, never dropped. When the 15th caller says "there's a kid on the fire escape," that detail goes into the incident's timeline and can raise its priority.
+
+**Results on a simulated spike** of 57 calls: one apartment fire described 48 different ways, plus five unrelated emergencies hidden in the stream, some only 300m away.
+
+- 57 calls → 6 incidents
+- 100% of duplicates merged automatically
+- **0 separate emergencies wrongly merged**
+- **5/5 hidden emergencies brought to the top**
+- P1 calls flagged in about 350ms, including the network round-trip
+- Jev made each match decision 5–8× faster than an LLM making the same decision (about 0.2–0.3s against 1.6s), and the two agreed 100% of the time
+- A caller relaying a friend's text from 2km away was still matched to the right fire
+
+**Why a System 1 model:** "Is this the same incident?" and "how urgent is this?" are quick yes-or-ranked decisions, not writing tasks. Jev answers them with calibrated probabilities instead of generated text. That makes it fast enough to use on every call in a spike, and the probabilities give natural thresholds for when to ask a human. The LLM handles the part that needs language: pulling structured facts out of panicked speech.
+
+**Built with:** Next.js on Vercel, Jev (`typesafe/jev-1.13`) and Claude Haiku 5.5 through OpenRouter, Leaflet.
+
+**Limitations and next steps:** The results come from synthetic transcripts, and the merge thresholds were set using that same data. Next steps are real audio with live speech-to-text, the location data phone carriers send with 911 calls, a shared incident store for many dispatchers, and testing on historical call data.
+
 ## Run
 
 ```bash
