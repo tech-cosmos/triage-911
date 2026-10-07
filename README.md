@@ -47,6 +47,8 @@ npm run dev        # needs OPENROUTER_API_KEY in .env.local
 
 Open the page and click **▶ Simulate spike**. It streams 57 calls: 48 about one apartment fire on W 23rd St, plus 5 unrelated emergencies hidden in the stream. Some are only about 300m away, such as a cardiac arrest at 8th Ave & 21st.
 
+Click **📍 Near me** to share your location (the browser asks for permission first). Incidents are then sorted closest-first, each card shows its distance, you appear on the map, and the nearest incident opens automatically. Click again to go back to priority order. Your location stays in the browser and is never sent to the server.
+
 `npx tsx scripts/eval.ts` runs the same data headless and prints every decision and the metrics.
 
 ## How each call is processed

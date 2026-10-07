@@ -11,11 +11,13 @@ export default function IncidentMap({
   calls,
   selected,
   onSelect,
+  me,
 }: {
   incidents: Incident[];
   calls: ProcessedCall[];
   selected: string | null;
   onSelect: (id: string) => void;
+  me: { lat: number; lng: number } | null;
 }) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -56,7 +58,20 @@ export default function IncidentMap({
         .on("click", () => onSelect(inc.id));
       m.addTo(g);
     }
-  }, [incidents, calls, selected, onSelect]);
+    if (me)
+      L.marker([me.lat, me.lng], { icon: L.divIcon({ className: "", html: '<div class="me-dot"></div>', iconSize: [14, 14] }) })
+        .bindTooltip("You", { permanent: true, direction: "bottom", className: "map-tip" })
+        .addTo(g);
+  }, [incidents, calls, selected, onSelect, me]);
+
+  // On getting a location, frame the user and their nearest incident together.
+  useEffect(() => {
+    if (!map.current || !me) return;
+    const nearest = incidents[0];
+    if (!nearest) return void map.current.setView([me.lat, me.lng], 15);
+    map.current.fitBounds(L.latLngBounds([me.lat, me.lng], [nearest.lat, nearest.lng]), { padding: [60, 60], maxZoom: 16 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me, incidents[0]?.id]);
 
   return <div ref={el} className="map" />;
 }

@@ -12,10 +12,35 @@ const since = (from: number | null, at: number) => (from ? `+${((at - from) / 10
 const pct = (x: number | null) => (x === null ? "—" : `${Math.round(x * 100)}%`);
 const ms = (x: number | null) => (x === null ? "—" : `${x}ms`);
 
+type LatLng = { lat: number; lng: number };
+type LocState = { status: "off" | "asking" | "denied" | "unavailable" } | { status: "on"; me: LatLng };
+
+function distanceM(a: LatLng, b: LatLng) {
+  const R = 6_371_000, rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const fmtDist = (m: number) => (m < 1000 ? `${Math.round(m)} m` : m < 100_000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m / 1000)} km`);
+
 export default function Dashboard() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [speed, setSpeed] = useState(3);
   const [selected, setSelected] = useState<string | null>(null);
+  const [loc, setLoc] = useState<LocState>({ status: "off" });
+
+  // Asked only on click, so the browser permission prompt has context.
+  const locate = () => {
+    if (loc.status === "on") return setLoc({ status: "off" });
+    if (!("geolocation" in navigator)) return setLoc({ status: "unavailable" });
+    setLoc({ status: "asking" });
+    navigator.geolocation.getCurrentPosition(
+      (p) => { setSelected(null); setLoc({ status: "on", me: { lat: p.coords.latitude, lng: p.coords.longitude } }); },
+      (e) => setLoc({ status: e.code === e.PERMISSION_DENIED ? "denied" : "unavailable" }),
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
+    );
+  };
+  const me = loc.status === "on" ? loc.me : null;
 
   useEffect(() => {
     // Coalesce engine updates into at most one render per frame.
@@ -32,7 +57,12 @@ export default function Dashboard() {
 
 
   const calls = snap?.calls ?? [];
-  const incidents = snap?.incidents ?? [];
+  // With the user's location, nearest incident first; otherwise the engine's priority order.
+  const incidents = useMemo(() => {
+    const list = snap?.incidents ?? [];
+    return me ? [...list].sort((a, b) => distanceM(me, a) - distanceM(me, b)) : list;
+  }, [snap, me]);
+  const distOf = (i: Incident) => (me ? fmtDist(distanceM(me, i)) : undefined);
   const byId = useMemo(() => new Map(calls.map((c) => [c.id, c])), [calls]);
   const main = useMemo(
     () => incidents.reduce<Incident | null>((a, b) => (!a || b.callIds.length > a.callIds.length ? b : a), null),
@@ -40,7 +70,7 @@ export default function Dashboard() {
   );
   const hidden = incidents.filter((i) => i.isolated && i.id !== main?.id);
   const reviewQueue = calls.filter((c) => c.decision === "review");
-  const sel = incidents.find((i) => i.id === selected) ?? main;
+  const sel = incidents.find((i) => i.id === selected) ?? (me ? incidents[0] : main);
   const onSelect = useCallback((id: string) => setSelected(id), []);
   const m = snap?.metrics;
   const speedup = m?.avgJevMs && m?.avgShadowMs ? (m.avgShadowMs / m.avgJevMs).toFixed(1) : null;
@@ -54,6 +84,13 @@ export default function Dashboard() {
           <span className="sub">duplicate detection &amp; priority flagging · decisions by Jev</span>
         </div>
         <div className="controls">
+          <button className={loc.status === "on" ? "loc on" : "loc"} onClick={locate} disabled={loc.status === "asking"}
+            title={loc.status === "on" ? "Back to priority order" : "Sort incidents by distance from you"}>
+            {loc.status === "asking" ? "Locating…" : loc.status === "on" ? "📍 Nearest first ✓" : "📍 Near me"}
+          </button>
+          {(loc.status === "denied" || loc.status === "unavailable") && (
+            <span className="loc-err">{loc.status === "denied" ? "Location permission denied" : "Location unavailable"}</span>
+          )}
           <label>
             speed
             <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
@@ -95,7 +132,7 @@ export default function Dashboard() {
 
         <section className="panel incidents">
           <h2 className="alert">Not part of the main event <span>{hidden.length}</span></h2>
-          {hidden.length ? hidden.map((i) => <IncidentCard key={i.id} i={i} byId={byId} onSelect={onSelect} active={sel?.id === i.id} highlight />)
+          {hidden.length ? hidden.map((i) => <IncidentCard key={i.id} i={i} byId={byId} onSelect={onSelect} active={sel?.id === i.id} distance={distOf(i)} highlight />)
             : <p className="empty">Separate emergencies that arrive during the spike surface here.</p>}
 
           {reviewQueue.length > 0 && (
@@ -114,12 +151,15 @@ export default function Dashboard() {
             </>
           )}
 
-          <h2>All incidents <span>{incidents.length}</span></h2>
-          {incidents.map((i) => <IncidentCard key={i.id} i={i} byId={byId} onSelect={onSelect} active={sel?.id === i.id} />)}
+          <h2>All incidents <span>{incidents.length}</span>{me && <em>nearest to you first</em>}</h2>
+          {incidents.map((i, n) => (
+            <IncidentCard key={i.id} i={i} byId={byId} onSelect={onSelect} active={sel?.id === i.id}
+              distance={distOf(i)} nearest={!!me && n === 0} />
+          ))}
         </section>
 
         <section className="panel right">
-          <IncidentMap incidents={incidents} calls={calls} selected={sel?.id ?? null} onSelect={onSelect} />
+          <IncidentMap incidents={incidents} calls={calls} selected={sel?.id ?? null} onSelect={onSelect} me={me} />
           {sel && (
             <div className="detail">
               <div className="row"><b>{sel.id}</b><Prio p={sel.priority} /><span className="muted">{sel.callIds.length} calls</span></div>
@@ -180,8 +220,9 @@ function CallRow({ c, startedAt, onSelect }: { c: ProcessedCall; startedAt: numb
   );
 }
 
-function IncidentCard({ i, byId, onSelect, active, highlight }: {
+function IncidentCard({ i, byId, onSelect, active, highlight, distance, nearest }: {
   i: Incident; byId: Map<string, ProcessedCall>; onSelect: (id: string) => void; active: boolean; highlight?: boolean;
+  distance?: string; nearest?: boolean;
 }) {
   const facts = byId.get(i.callIds[0])?.facts;
   const vulnerable = [...new Set(i.callIds.flatMap((id) => byId.get(id)?.facts?.vulnerable ?? []))];
@@ -190,7 +231,8 @@ function IncidentCard({ i, byId, onSelect, active, highlight }: {
       <div className="row">
         <b>{i.id}</b>
         <Prio p={i.priority} />
-        <span className="count">{i.callIds.length} call{i.callIds.length > 1 ? "s" : ""}</span>
+        {nearest && <span className="nearest">Closest to you</span>}
+        <span className="count">{distance && <span className="dist">{distance} · </span>}{i.callIds.length} call{i.callIds.length > 1 ? "s" : ""}</span>
       </div>
       <h3>{i.label}</h3>
       {facts && <p className="muted">{facts.injuries}{facts.hazards?.length ? ` · ${facts.hazards.join(", ")}` : ""}</p>}
