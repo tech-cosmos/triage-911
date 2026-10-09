@@ -72,6 +72,7 @@ export default function Dashboard() {
   const reviewQueue = calls.filter((c) => c.decision === "review");
   const sel = incidents.find((i) => i.id === selected) ?? (me ? incidents[0] : main);
   const onSelect = useCallback((id: string) => setSelected(id), []);
+  const rateLimited = calls.map((c) => c.error?.match(/Rate limit reached\. Try again in \d+s\./)?.[0]).find(Boolean);
   const m = snap?.metrics;
   const speedup = m?.avgJevMs && m?.avgShadowMs ? (m.avgShadowMs / m.avgJevMs).toFixed(1) : null;
 
@@ -105,6 +106,12 @@ export default function Dashboard() {
           <button onClick={() => { setSelected(null); reset(); }}>Reset</button>
         </div>
       </header>
+
+      {rateLimited && (
+        <div className="banner">
+          {rateLimited} This demo limits how many model calls each visitor can make.
+        </div>
+      )}
 
       <section className="metrics">
         <Metric label="calls → incidents" value={m ? `${m.callsProcessed} → ${m.incidents}` : "—"} />

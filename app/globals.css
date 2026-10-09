@@ -34,6 +34,7 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 .controls { display: flex; gap: 8px; align-items: center; }
 .controls label { color: var(--muted); display: flex; gap: 6px; align-items: center; }
 
+.banner { padding: 8px 16px; background: #3a2a10; color: var(--p2); border-bottom: 1px solid var(--line); }
 .metrics { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--line); }
 .metric { padding: 10px 16px; border-right: 1px solid var(--line); }
 .metric .v { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }

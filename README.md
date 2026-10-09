@@ -78,7 +78,7 @@ A shadow baseline also asks Haiku to make the same two decisions, off the critic
 - **A wrong merge is the worst error**, because it hides a separate emergency. Jev's scores separate cleanly on this data (same incident: 0.75–0.96; different: ≤0.06), and the thresholds keep a wide margin.
 - **Models can raise a priority but never lower a keyword-rule P1.**
 - Incident state lives in each viewer's browser, so every visitor runs their own simulation. A real dispatch center would keep it in a shared database.
-- Each run makes about 170 model calls through the deployer's OpenRouter key.
+- Each run makes about 230 requests to `/api/decide` (about 170 model calls) through the deployer's OpenRouter key. The endpoint is rate-limited to 500 requests per IP per 5 minutes (about two runs) and 4,000 per hour overall. It also rejects inputs larger than a real call or incident list. The counters live in function memory, so the limits are approximate per serverless instance.
 
 ## Deploy
 
