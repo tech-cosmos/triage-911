@@ -4,6 +4,8 @@ When an incident causes a spike in 911 calls, Triage 911 groups duplicate report
 
 **Live demo: https://triage-911.vercel.app** (click **▶ Simulate spike**)
 
+**Launch video (30 s): [triage-911-cutscene.mp4](https://github.com/tech-cosmos/triage-911/releases/download/v1.0/triage-911-cutscene.mp4)**
+
 ## Project description (hackathon submission)
 
 > Triage 911 merges duplicate 911 calls during a spike and flags urgent ones in ~350ms using the Jev System 1 model. In a 57-call test: 0 wrong merges, 5/5 hidden emergencies found.
